@@ -1,2 +1,2 @@
-# filament-segmentation
+# Filament Segmentation
 Segmentation of filaments in tomograms
