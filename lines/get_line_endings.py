@@ -2,6 +2,7 @@ import numpy as np
 import skimage
 import matplotlib.pyplot as plt
 
+
 def get_line_ends(
     mask: np.ndarray, plot: bool = False, dpi: int = 500
 ) -> np.ndarray:
