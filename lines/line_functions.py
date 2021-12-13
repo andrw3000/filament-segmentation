@@ -122,9 +122,23 @@ def weighted_line(r0, c0, r1, c1, w, rmin=0, rmax=np.inf):
 
 
 def get_line_instances(semantic_mask: np.ndarray,
-                       hough_line_dist: int = 100,
-                       pixel_width: int = 1):
-    """Traces straight lines through semantic filament segmentations."""
+                       length_tol: float = 0.2,
+                       line_pixel_width: int = 1,
+                       hough_line_sep: int = 20,
+                       ):
+    """Traces straight lines through semantic filament segmentations.
+
+    Args:
+        semantic_mask: Input mask with data type uint8.
+        length_tol: Fraction of longest edge for minimum length.
+        line_pixel_width: Bespoke maximum pixel width of instance masks.
+        hough_line_sep: Minimum distance between proposed hough lines.
+
+    Returns:
+        full_lines: Lines spanning the boundaries os the semantic_mask.
+        instances: Proposed instance masks.
+        line_ends: corresponding endpoints of instance masks.
+    """
 
     # Classic straight-line Hough transform with .5 degree precision
     test_angles = np.linspace(-np.pi / 2, np.pi / 2, 360, endpoint=False)
@@ -137,7 +151,7 @@ def get_line_instances(semantic_mask: np.ndarray,
 
     # Iterate over Hough lines
     for _, angle, dist in zip(*hough_line_peaks(
-            h, angles, dists, min_distance=hough_line_dist, min_angle=10
+            h, angles, dists, min_distance=hough_line_sep, min_angle=10,
     )):
         # Intercepts of Hough line with pixel border
         int1, int2 = boundary_intersections(nrows=semantic_mask.shape[0],
@@ -145,6 +159,50 @@ def get_line_instances(semantic_mask: np.ndarray,
                                             angle=angle,
                                             dist=dist,
                                             )
+
+        # Compute thin line:
+        thin_line = np.zeros(shape=semantic_mask.shape, dtype=np.uint8)
+        rr, cc = line(int1[0], int1[1], int2[0], int2[1])
+        rr[rr >= semantic_mask.shape[0]] = semantic_mask.shape[0] - 1  # Trim r
+        cc[cc >= semantic_mask.shape[1]] = semantic_mask.shape[1] - 1  # Trim c
+        thin_line[rr, cc] = 255
+
+        # Take intersection of thin line and semantic mask
+        thin_comp = (thin_line.astype(float) +
+                     semantic_mask.astype(float) > 255).astype(int) * 255
+        line_ends = get_line_ends(thin_comp, dpi=72)
+
+        # Discard fragmented instances
+        sqdist = []
+        for ends in line_ends:
+            p1 = ends[0]
+            p2 = ends[1]
+            sqdist.append((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+
+        max_ends = line_ends[max(sqdist)]
+
+        if max(sqdist) > length_tol * max(semantic_mask.shape):
+            wide_line = np.zeros(shape=semantic_mask.shape, dtype=np.uint8)
+            rrw, ccw, _ = weighted_line(
+                int1[0], int1[1], int2[0], int2[1], line_pixel_width,
+            )
+            rrw[rrw >= semantic_mask.shape[0]] = semantic_mask.shape[0] - 1
+            ccw[ccw >= semantic_mask.shape[1]] = semantic_mask.shape[1] - 1
+            wide_line[rrw, ccw] = 255
+
+            # Take intersection of thin line and semantic mask
+            wide_comp = (wide_line.astype(float) +
+                         semantic_mask.astype(float) > 255).astype(int) * 255
+
+            full_lines.append(wide_line)
+            instances.append(wide_comp)
+            line_ends.append(line_ends[max(sqdist)])
+
+
+
+            line_ends.append(get_line_ends(thin_line, dpi=72))
+
+        #####
 
         # Compute line
         rr, cc, vals = weighted_line(
@@ -158,22 +216,17 @@ def get_line_instances(semantic_mask: np.ndarray,
         # Record total line
         full_line = np.zeros(shape=semantic_mask.shape, dtype=np.uint8)
         full_line[rr, cc] = 255
-        full_lines.append(full_line)
 
         # Take complement with semantic mask
-        float_line = full_line.astype(float)
-        float_mask =
-        instance = (full_line.astype(float) + semantic_mask > 255).astype(int) * 255
+        instance = (full_line.astype(float) +
+                    semantic_mask.astype(float) > 255).astype(int) * 255
+
+
+        full_lines.append(full_line)
         instances.append(instance)
 
-        # Compute thin line:
-        rr0, cc0 = line(int1[0], int1[1], int2[0], int2[1])
-        rr0[rr0 >= semantic_mask.shape[0]] = semantic_mask.shape[0] - 1
-        cc0[cc0 >= semantic_mask.shape[1]] = semantic_mask.shape[1] - 1
 
-        # Take compliment with thin line
-        thin_line = np.zeros(shape=semantic_mask.shape, dtype=np.uint8)
-        thin_line[rr0, cc0] = 255
-        line_ends.append(get_line_ends(thin_line, dpi=72))
+
+
 
     return full_lines, instances, line_ends
