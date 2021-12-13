@@ -8,12 +8,12 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 import matplotlib.gridspec as gridspec
 
-from lines import get_line_ends, weighted_line, line_instances
+from lines import get_line_instances
 
 # Import test image
-root_dir = '/'
+root_dir = '/Users/Holmes/Research/IDSAI/PROOF/filament-segmentation'
 data_dir = os.path.join(root_dir, 'data/masks-tf1/semantic')
-image_file = 'tf1_010.png'
+image_file = 'tf1_090.png'
 image = io.imread(os.path.join(data_dir, image_file))
 if len(image.shape) > 2:
     image = image[:, :, 0]
@@ -21,17 +21,21 @@ print('image shape: ', image.shape)
 
 
 # Compute instances from semantic mask
-full_lines, instances, line_ends = line_instances(image, pixel_width=100)
+full_lines, instances, line_ends = get_line_instances(image,
+                                                      hough_line_dist=100,
+                                                      pixel_width=200)
+
 nlines = len(instances)
+print('Number of lines identified: ', nlines)
 
 # Check line ends
-for line_end in line_ends:
-    print(line_end)
+for idx, line_end in enumerate(line_ends):
+    print('Line endings on line {}: '.format(idx), *line_end)
 
 # Plot output of `line_instances`
 
 # Plot all instances
-fig = plt.figure(constrained_layout=True)
+fig = plt.figure(constrained_layout=True, figsize=(12, 6))
 gs = gridspec.GridSpec(1, 2, figure=fig)
 
 # Plot original image
@@ -48,6 +52,7 @@ for ii in range(nlines):
     ax1.imshow(instances[ii], cmap=cm.gray)
     ax1.set_ylim((image.shape[0], 0))
     ax1.set_xlim((0, image.shape[1]))
+    ax1.set_axis_off()
 
-plt.tight_layout()
+#plt.tight_layout()
 plt.show()

@@ -24,7 +24,7 @@ def boundary_intersections(nrows, ncols, angle, dist):
 
     # Compute boundary intersections with  exceptional `tol` cases.
     bpoints = []
-    tol = 1e-5
+    tol = 1e-8
 
     if grad < tol:
         # Approximately vertical, y = y0 with grad = 0.
@@ -121,7 +121,9 @@ def weighted_line(r0, c0, r1, c1, w, rmin=0, rmax=np.inf):
     return yy[mask].astype(int), xx[mask].astype(int), vals[mask]
 
 
-def line_instances(semantic_mask: np.ndarray, pixel_width=1):
+def get_line_instances(semantic_mask: np.ndarray,
+                       hough_line_dist: int = 100,
+                       pixel_width: int = 1):
     """Traces straight lines through semantic filament segmentations."""
 
     # Classic straight-line Hough transform with .5 degree precision
@@ -135,7 +137,7 @@ def line_instances(semantic_mask: np.ndarray, pixel_width=1):
 
     # Iterate over Hough lines
     for _, angle, dist in zip(*hough_line_peaks(
-            h, angles, dists, min_distance=100, min_angle=10
+            h, angles, dists, min_distance=hough_line_dist, min_angle=10
     )):
         # Intercepts of Hough line with pixel border
         int1, int2 = boundary_intersections(nrows=semantic_mask.shape[0],
@@ -155,7 +157,7 @@ def line_instances(semantic_mask: np.ndarray, pixel_width=1):
 
         # Record total line
         full_line = np.zeros(shape=semantic_mask.shape, dtype=np.uint8)
-        full_line[rr, cc] = 225
+        full_line[rr, cc] = 255
         full_lines.append(full_line)
 
         # Take complement with semantic mask
@@ -170,6 +172,6 @@ def line_instances(semantic_mask: np.ndarray, pixel_width=1):
         # Take compliment with thin line
         thin_line = np.zeros(shape=semantic_mask.shape, dtype=np.uint8)
         thin_line[rr0, cc0] = 225
-        line_ends = get_line_ends(thin_line, dpi=72)
+        line_ends.append(get_line_ends(thin_line, dpi=72))
 
     return full_lines, instances, line_ends
