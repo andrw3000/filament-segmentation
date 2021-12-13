@@ -161,7 +161,9 @@ def get_line_instances(semantic_mask: np.ndarray,
         full_lines.append(full_line)
 
         # Take complement with semantic mask
-        instance = (full_line + semantic_mask > 255).astype(int) * 255
+        float_line = full_line.astype(float)
+        float_mask =
+        instance = (full_line.astype(float) + semantic_mask > 255).astype(int) * 255
         instances.append(instance)
 
         # Compute thin line:
@@ -171,7 +173,7 @@ def get_line_instances(semantic_mask: np.ndarray,
 
         # Take compliment with thin line
         thin_line = np.zeros(shape=semantic_mask.shape, dtype=np.uint8)
-        thin_line[rr0, cc0] = 225
+        thin_line[rr0, cc0] = 255
         line_ends.append(get_line_ends(thin_line, dpi=72))
 
     return full_lines, instances, line_ends

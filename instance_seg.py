@@ -23,7 +23,7 @@ print('image shape: ', image.shape)
 # Compute instances from semantic mask
 full_lines, instances, line_ends = get_line_instances(image,
                                                       hough_line_dist=100,
-                                                      pixel_width=200)
+                                                      pixel_width=100)
 
 nlines = len(instances)
 print('Number of lines identified: ', nlines)
