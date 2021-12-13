@@ -179,7 +179,8 @@ def get_line_instances(semantic_mask: np.ndarray,
             p2 = ends[1]
             sqdist.append((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
 
-        max_ends = line_ends[max(sqdist)]
+        if line_ends[max(sqdist)].shape[0] > 2:
+            raise ValueError('Too many line ends.')
 
         if max(sqdist) > length_tol * max(semantic_mask.shape):
             wide_line = np.zeros(shape=semantic_mask.shape, dtype=np.uint8)
@@ -198,35 +199,7 @@ def get_line_instances(semantic_mask: np.ndarray,
             instances.append(wide_comp)
             line_ends.append(line_ends[max(sqdist)])
 
-
-
-            line_ends.append(get_line_ends(thin_line, dpi=72))
-
-        #####
-
-        # Compute line
-        rr, cc, vals = weighted_line(
-            int1[0], int1[1], int2[0], int2[1], pixel_width
-        )
-
-        # Trim weighted line
-        rr[rr >= semantic_mask.shape[0]] = semantic_mask.shape[0] - 1
-        cc[cc >= semantic_mask.shape[1]] = semantic_mask.shape[1] - 1
-
-        # Record total line
-        full_line = np.zeros(shape=semantic_mask.shape, dtype=np.uint8)
-        full_line[rr, cc] = 255
-
-        # Take complement with semantic mask
-        instance = (full_line.astype(float) +
-                    semantic_mask.astype(float) > 255).astype(int) * 255
-
-
-        full_lines.append(full_line)
-        instances.append(instance)
-
-
-
-
+        else:
+            pass
 
     return full_lines, instances, line_ends
