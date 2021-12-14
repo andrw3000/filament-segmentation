@@ -145,7 +145,6 @@ def get_line_instances(semantic_mask: np.ndarray,
     h, angles, dists = hough_line(semantic_mask, theta=test_angles)
 
     # Function outputs
-    full_lines = []
     instances = []
     line_ends = []
 
@@ -170,36 +169,41 @@ def get_line_instances(semantic_mask: np.ndarray,
         # Take intersection of thin line and semantic mask
         thin_comp = (thin_line.astype(float) +
                      semantic_mask.astype(float) > 255).astype(int) * 255
-        line_ends = get_line_ends(thin_comp, dpi=72)
+        end_pairs = get_line_ends(thin_comp, dpi=72)
 
-        # Discard fragmented instances
-        sqdist = []
-        for ends in line_ends:
-            p1 = ends[0]
-            p2 = ends[1]
-            sqdist.append((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+        # Discard small fragments from instance
+        sq_dists = []
+        long_ends = []
+        long_lines = []
+        for ends in end_pairs:
+            e1 = ends[0]
+            e2 = ends[1]
+            sq_dists.append((e1[0] - e2[0])**2 + (e1[1] - e2[1])**2)
+            if np.sqrt(sq_dists[-1]) > length_tol * max(semantic_mask.shape):
+                long_ends.append(ends)
+                wide_line = np.zeros(shape=semantic_mask.shape, dtype=np.uint8)
+                rrw, ccw, _ = weighted_line(
+                    e1[0], e1[1], e2[0], e2[1], line_pixel_width,
+                )
+                rrw[rrw >= semantic_mask.shape[0]] = semantic_mask.shape[0] - 1
+                ccw[ccw >= semantic_mask.shape[1]] = semantic_mask.shape[1] - 1
+                wide_line[rrw, ccw] = 255
+                long_lines.append(wide_line.astype(float))
 
-        if line_ends[max(sqdist)].shape[0] > 2:
-            raise ValueError('Too many line ends.')
+        if long_lines:
+            # Save endpoints
+            line_ends.append(long_ends)
 
-        if max(sqdist) > length_tol * max(semantic_mask.shape):
-            wide_line = np.zeros(shape=semantic_mask.shape, dtype=np.uint8)
-            rrw, ccw, _ = weighted_line(
-                int1[0], int1[1], int2[0], int2[1], line_pixel_width,
+            # Add fragments together onto single instance mask
+            instance = (sum(long_lines) > 0).astype(int) * 255
+
+            # Take intersection with semantic mask
+            instances.append(
+                (instance.astype(float) +
+                semantic_mask.astype(float) > 255).astype(int) * 255
             )
-            rrw[rrw >= semantic_mask.shape[0]] = semantic_mask.shape[0] - 1
-            ccw[ccw >= semantic_mask.shape[1]] = semantic_mask.shape[1] - 1
-            wide_line[rrw, ccw] = 255
 
-            # Take intersection of thin line and semantic mask
-            wide_comp = (wide_line.astype(float) +
-                         semantic_mask.astype(float) > 255).astype(int) * 255
+    else:
+        pass
 
-            full_lines.append(wide_line)
-            instances.append(wide_comp)
-            line_ends.append(line_ends[max(sqdist)])
-
-        else:
-            pass
-
-    return full_lines, instances, line_ends
+    return instances, line_ends
