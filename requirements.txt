@@ -1,7 +1,7 @@
 h5py
-matplotlib
 numpy
+matplotlib
 pillow > 8.1.2
-opencv
+opencv-python
 scikit-image
 tensorflow

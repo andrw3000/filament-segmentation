@@ -1,18 +1,15 @@
-# Code greatfully adapted from
-#   https://towardsdatascience.com/generating-image-segmentation-
-#                                  masks-the-easy-way-dd4d3656dbd1
-
 import os
 import cv2
 import json
 import numpy as np
 
 root_dir = '/Users/Holmes/Research/IDSAI/PROOF/filament-segmentation'
-img_dir = os.path.join(root_dir, 'data/images-tf1')  # Contains original PNGs
-json_file = os.path.join(root_dir, 'data/polygons-tf1.json')
+data_dir = os.path.join(root_dir, 'data/tomograms3D/tomo4')
+img_dir = os.path.join(data_dir, 'zstack_tomo4')
+json_file = os.path.join(data_dir, 'polygons-tomo4.json')
 
-imask_dir = os.path.join(root_dir, 'masks-instance')
-smask_dir = os.path.join(root_dir, 'masks-semantic')
+imask_dir = os.path.join(data_dir, 'png-masks/instance')
+smask_dir = os.path.join(data_dir, 'png-masks/semantic')
 if not os.path.exists(imask_dir):
     os.makedirs(imask_dir)
 if not os.path.exists(smask_dir):

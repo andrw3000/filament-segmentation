@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib import cm
 from matplotlib import colors
-from lines import get_line_instances
+from .line_functions import get_line_instances
 
 
 class MaskColours:
@@ -22,10 +22,13 @@ class MaskColours:
     def get_rgb(self, val):
         return self.scalarMap.to_rgba(val)
 
+
 # Import test mask
 root_dir = '/Users/Holmes/Research/IDSAI/PROOF/filament-segmentation'
-data_dir = os.path.join(root_dir, 'data/masks-tf1/semantic')
-mask_file = 'tf1_002.png'
+# data_dir = os.path.join(root_dir, 'data/tomograms3D/tomo1')
+data_dir = os.path.join(root_dir, 'data/tomograms2D/tf1')
+imag_dir = os.path.join(data_dir, 'png-masks/semantic')
+mask_file = 'tf1_002.png'  # 'zslice0073.png'
 mask = io.imread(os.path.join(data_dir, mask_file))
 print(mask.shape)
 print(mask.shape[0])
@@ -55,12 +58,12 @@ for idx, line_end in enumerate(line_ends):
 #################################
 
 # Plot all instances
-fig = plt.figure(constrained_layout=True, figsize=(12, 6))
-gs = gridspec.GridSpec(1, 2, figure=fig)
+fig1 = plt.figure(constrained_layout=True, figsize=(12, 6))
+gs = gridspec.GridSpec(1, 2, figure=fig1)
 
 # Plot original mask
 gs0 = gridspec.GridSpecFromSubplotSpec(1, 1, subplot_spec=gs[0])
-ax0 = fig.add_subplot(gs0[0])
+ax0 = fig1.add_subplot(gs0[0])
 ax0.imshow(mask, cmap=cm.gray)
 ax0.set_title('Input mask')
 
@@ -68,12 +71,13 @@ ax0.set_title('Input mask')
 grid_width = ninst//4 + int(np.ceil((ninst % 4) / 4))
 gs1 = gridspec.GridSpecFromSubplotSpec(4, grid_width, subplot_spec=gs[1])
 for ii in range(ninst):
-    ax1 = fig.add_subplot(gs1[ii])
+    ax1 = fig1.add_subplot(gs1[ii])
     ax1.imshow(instances[ii], cmap=cm.gray)
     ax1.set_ylim((mask.shape[0], 0))
     ax1.set_xlim((0, mask.shape[1]))
     ax1.set_axis_off()
 
+fig1.save_fig()
 #plt.tight_layout()
 plt.show()
 
@@ -85,6 +89,8 @@ plt.show()
 # Plot overlay of instances
 #################################
 
+"""
 lines = ['Readme', 'How to write text files in Python']
 with open(file_name + 'coordinates.txt', 'w') as f:
     f.write('\n'.join(lines))
+"""
