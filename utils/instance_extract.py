@@ -26,12 +26,12 @@ def boundary_intersections(nrows, ncols, angle, dist):
     bpoints = []
     tol = 1e-8
 
-    if grad < tol:
+    if np.abs(grad) < tol:
         # Approximately vertical, y = y0 with grad = 0.
         bpoints.append((np.rint(y0).astype(np.int), xmin))
         bpoints.append((np.rint(y0).astype(np.int), xmax))
 
-    elif grad > 1/tol:
+    elif np.abs(grad) > 1/tol:
         # Approximately horizontal, x = x0 with grad = inf.
         bpoints.append((ymin, np.rint(x0).astype(np.int)))
         bpoints.append((ymax, np.rint(y0).astype(np.int)))
@@ -68,8 +68,12 @@ def boundary_intersections(nrows, ncols, angle, dist):
             if intercept is not None:
                 bpoints.append(intercept)
 
-    if not len(bpoints) == 2:
-        raise ValueError('Only {} boundary intersections'.format(len(bpoints)))
+    if len(bpoints) > 2:
+        bpoints = list(set(bpoints))
+    elif not len(bpoints) == 2:
+        raise ValueError(
+            'Only {} boundary intersections'.format(len(bpoints))
+        )
 
     return bpoints[0], bpoints[1]
 
@@ -121,9 +125,7 @@ def weighted_line(r0, c0, r1, c1, w, rmin=0, rmax=np.inf):
     return yy[mask].astype(int), xx[mask].astype(int), vals[mask]
 
 
-def get_line_ends(
-    mask: np.ndarray, plot: bool = False, dpi: int = 500
-) -> np.ndarray:
+def get_line_ends(mask: np.ndarray) -> np.ndarray:
     # how to determine if we have a line end after skeletonization:
     # - look in a 3x3 window centred on a pixel
     # - if we only have one pixel connected to it then it must be a line end
@@ -194,20 +196,13 @@ def get_line_ends(
         # set the plotting image
         mask = mask_labels
 
-    if plot:
-        _, ax = plt.subplots(1, 1, figsize=(10, 5), dpi=dpi)
-        ax.imshow(mask, cmap="hot")
-        for [[r0, c0], [r1, c1]] in end_pairs:
-            ax.plot([c0, c1], [r0, r1], ls="", marker="x")
-        plt.show()
-
     return end_pairs
 
 
 def get_line_instances(semantic_mask: np.ndarray,
                        length_tol: float = 0.2,
                        line_pixel_width: int = 1,
-                       hough_line_sep: int = 20,
+                       line_sep: int = 20,
                        ):
     """Traces straight lines through semantic filament segmentations.
 
@@ -215,7 +210,7 @@ def get_line_instances(semantic_mask: np.ndarray,
         semantic_mask: Input mask with data type uint8.
         length_tol: Fraction of longest edge for minimum length.
         line_pixel_width: Bespoke maximum pixel width of instance masks.
-        hough_line_sep: Minimum distance between proposed hough lines.
+        line_sep: Minimum distance between proposed hough lines.
 
     Returns:
         full_lines: Lines spanning the boundaries os the semantic_mask.
@@ -233,7 +228,7 @@ def get_line_instances(semantic_mask: np.ndarray,
 
     # Iterate over Hough lines
     for _, angle, dist in zip(*hough_line_peaks(
-            h, angles, dists, min_distance=hough_line_sep, min_angle=10,
+            h, angles, dists, min_distance=line_sep, min_angle=10,
     )):
         # Intercepts of Hough line with pixel border
         int1, int2 = boundary_intersections(nrows=semantic_mask.shape[0],
@@ -252,7 +247,7 @@ def get_line_instances(semantic_mask: np.ndarray,
         # Take intersection of thin line and semantic mask
         thin_comp = (thin_line.astype(float) +
                      semantic_mask.astype(float) > 255).astype(int) * 255
-        end_pairs = get_line_ends(thin_comp, dpi=72)
+        end_pairs = get_line_ends(thin_comp)
 
         # Discard small fragments from instance
         sq_dists = []

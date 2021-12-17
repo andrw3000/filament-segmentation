@@ -2,11 +2,12 @@ import os
 import cv2
 import json
 import numpy as np
+from tqdm import tqdm
 
 root_dir = '/Users/Holmes/Research/IDSAI/PROOF/filament-segmentation'
-data_dir = os.path.join(root_dir, 'data/tomograms3D/tomo4')
-img_dir = os.path.join(data_dir, 'zstack_tomo4')
-json_file = os.path.join(data_dir, 'polygons-tomo4.json')
+data_dir = os.path.join(root_dir, 'data/tomograms2D/tf1')
+img_dir = os.path.join(data_dir, 'png-original')
+json_file = os.path.join(data_dir, 'polygons-tf1.json')
 
 imask_dir = os.path.join(data_dir, 'png-masks/instance')
 smask_dir = os.path.join(data_dir, 'png-masks/semantic')
@@ -16,9 +17,8 @@ if not os.path.exists(smask_dir):
     os.makedirs(smask_dir)
 
 single_file = next(os.walk(img_dir))[2][0]
-img = cv2.imread(os.path.join(img_dir, single_file))
-mask_height = img.shape[0]
-mask_width = img.shape[1]
+single_img = cv2.imread(os.path.join(img_dir, single_file))
+mask_height, mask_width = single_img.shape[0], single_img.shape[1]
 # image_files = [os.path.join(img_dir, file)
 #                for file in os.listdir(img_dir) if file.endswith('.png')]
 
@@ -60,7 +60,7 @@ for itr in data:
     else:
         add_to_dict(data, itr, file_name_json[:-4], 0)
 
-print("\nDict size: ", len(file_bbs))
+print("\nTotal number of polygons in dictionary: ", len(file_bbs))
 
 for file_name in os.listdir(img_dir):
     if file_name.endswith('.png'):
@@ -68,7 +68,7 @@ for file_name in os.listdir(img_dir):
         curr_img = os.path.join(img_dir, file_name)
         
 # For each dictionary entry, generate instance mask and save
-for itr in file_bbs:
+for itr in tqdm(file_bbs):
     num_masks = itr.split("*")
     mask_folder = os.path.join(imask_dir, num_masks[0])
     if not os.path.exists(mask_folder):
@@ -80,8 +80,8 @@ for itr in file_bbs:
         print("Not found:", itr)
         continue
     count += 1
-    cv2.fillPoly(mask, [arr], color=255)
-    
+    cv2.fillPoly(mask, [arr], color=(255,))
+
     if len(num_masks) > 1:
         cv2.imwrite(os.path.join(mask_folder, itr.replace("*", "_") + ".png"),
                     mask)
@@ -92,11 +92,12 @@ print("Instances saved:", count)
 
 # Generate semantic masks
 
-for dir_name in os.listdir(imask_dir):
+for dir_name in tqdm(os.listdir(imask_dir)):
     dir_path = os.path.join(imask_dir, dir_name)
-    smask = np.zeros((mask_height, mask_width, 3))
+    smask = np.zeros((mask_height, mask_width))
     for img_name in os.listdir(dir_path):
-        imask = cv2.imread(os.path.join(dir_path, img_name)) / 255
+        imask = cv2.imread(os.path.join(dir_path, img_name),
+                           cv2.IMREAD_GRAYSCALE) / 255
         smask += imask
     smask = (smask > 0).astype(float) * 255
     cv2.imwrite(os.path.join(smask_dir, dir_name + ".png"), smask)

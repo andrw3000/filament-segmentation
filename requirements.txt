@@ -1,7 +1,13 @@
 h5py
+tqdm
 numpy
 matplotlib
 pillow > 8.1.2
+mrcfile
 opencv-python
 scikit-image
 tensorflow
+ipython
+notebook
+ipywidgets  # ensure: jupyter nbextension enable --py widgetsnbextension
+nest-asyncio
