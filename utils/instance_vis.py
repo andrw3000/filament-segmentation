@@ -36,9 +36,8 @@ def shade_instances(
                                     colors=label_colours(len(instances),
                                                          cmap_name=cmap_name,
                                                          ),
-                                    alpha=0.4,
+                                    alpha=0.3,
                                     kind='overlay',
-                                    saturation=0,
                                     )
 
     # Plot mask and image overlay instances
