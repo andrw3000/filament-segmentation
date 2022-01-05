@@ -2,6 +2,7 @@ import math
 import tensorflow as tf
 import tensorflow.keras.backend as kbe
 
+
 def get_trans_mat(rotation,
                   shear,
                   height_zoom,
@@ -94,6 +95,7 @@ def random_transform(image, mask):
     return (tf.reshape(new_image, [dim, dim, 1]),
             tf.reshape(new_mask, [dim, dim, 1]),
             )
+
 
 def augment_data(train_imgs, train_msks, valid_imgs, valid_msks, batch_size):
     train_set = tf.data.Dataset.from_tensor_slices((train_imgs, train_msks))

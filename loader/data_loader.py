@@ -4,6 +4,7 @@ import glob
 import numpy as np
 from skimage import transform, io
 
+
 def get_data(path_train_imgs,
              path_train_msks,
              path_valid_imgs,
