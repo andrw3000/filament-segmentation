@@ -17,12 +17,12 @@ def get_data(path_train_imgs,
     """Get, split, and arrange the dataset."""
 
     # Get training data
-    data_tra_imgs_filenames = glob.glob(path_train_imgs)
+    data_tra_msks_filenames = glob.glob(path_train_msks)
     data_tra_imgs = []
     data_tra_msks = []
-    for img_file in data_tra_imgs_filenames:
-        msk_file = os.path.join(path_train_msks,
-                                img_file.split('/')[-1][:-4] + '.png')
+    for msk_file in data_tra_msks_filenames:
+        img_file = os.path.join(path_train_imgs,
+                                msk_file.split('/')[-1][:-4] + '.png')
         img = io.imread(img_file).astype(float) / 255.
         img = transform.resize(img, (2 * image_size[0], 2 * image_size[1]))
         msk = (io.imread(msk_file) > 0).astype(float)
