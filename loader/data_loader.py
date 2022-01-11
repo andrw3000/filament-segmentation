@@ -1,6 +1,7 @@
 # Locate and augment data
 import os
 import glob
+from tqdm import tqdm
 import numpy as np
 from skimage import transform, io
 
@@ -13,6 +14,7 @@ def get_data(path_train_imgs,
              valid_frac,
              image_size,
              num_images_per_original,
+             num_duplicates_before_augmenting,
              ):
     """Get, split, and arrange the dataset."""
 
@@ -20,26 +22,42 @@ def get_data(path_train_imgs,
     data_tra_msks_filenames = glob.glob(path_train_msks)
     data_tra_imgs = []
     data_tra_msks = []
-    for msk_file in data_tra_msks_filenames:
+    for msk_file in tqdm(data_tra_msks_filenames):
         img_file = os.path.join(path_train_imgs,
                                 msk_file.split('/')[-1][:-4] + '.png')
         img = io.imread(img_file).astype(float) / 255.
-        img = transform.resize(img, (2 * image_size[0], 2 * image_size[1]))
+        if num_images_per_original > 1:
+            img = transform.resize(img,
+                                   (2 * image_size[0], 2 * image_size[1]),
+                                   anti_aliasing=True,
+                                   )
+        else:
+            img = transform.resize(img,
+                                   (image_size[0], image_size[1]),
+                                   anti_aliasing=True,
+                                   )
+
         msk = (io.imread(msk_file) > 0).astype(float)
         msk = transform.resize(msk, (img.shape[0], img.shape[1]))
         msk = (msk > 0.5).astype(float)
         #print('msk.shape: ', msk.shape)
         #print('img.shape: ', img.shape)
 
-        for i in range(num_images_per_original):
-            x_rand = np.random.randint(0, img.shape[1] - image_size[1])
-            y_rand = np.random.randint(0, img.shape[0] - image_size[0])
-            img_cropped = img[y_rand:y_rand + image_size[0],
-                              x_rand:x_rand + image_size[1]]
-            msk_cropped = msk[y_rand:y_rand + image_size[0],
-                              x_rand:x_rand + image_size[1]]
-            data_tra_imgs.append(np.expand_dims(img_cropped, -1))
-            data_tra_msks.append(np.expand_dims(msk_cropped, -1))
+        if num_images_per_original > 1:
+            for _ in range(num_images_per_original):
+                x_rand = np.random.randint(0, img.shape[1] - image_size[1])
+                y_rand = np.random.randint(0, img.shape[0] - image_size[0])
+                img_cropped = img[y_rand:y_rand + image_size[0],
+                                  x_rand:x_rand + image_size[1]]
+                msk_cropped = msk[y_rand:y_rand + image_size[0],
+                                  x_rand:x_rand + image_size[1]]
+                for _ in range(num_duplicates_before_augmenting):
+                    data_tra_imgs.append(np.expand_dims(img_cropped, -1))
+                    data_tra_msks.append(np.expand_dims(msk_cropped, -1))
+        else:
+            for _ in range(num_duplicates_before_augmenting):
+                data_tra_imgs.append(np.expand_dims(img, -1))
+                data_tra_msks.append(np.expand_dims(msk, -1))
 
     # Get validation/testing data
     if len(path_valid_imgs):
@@ -56,6 +74,7 @@ def get_data(path_train_imgs,
             msk = msk[:image_size[0], :image_size[1]]
             data_val_imgs.append(np.expand_dims(img, -1))
             data_val_msks.append(np.expand_dims(msk, -1))
+
         # Split the validation data into two
         ndata_val = len(data_val_imgs)
         data_tes_imgs = data_val_imgs[int(ndata_val / 2):]
