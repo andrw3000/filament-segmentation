@@ -1,10 +1,12 @@
-h5py
-pyyaml
 tqdm
 numpy
 matplotlib
-pillow > 8.1.2
+pandas
+h5py
+pyyaml
 mrcfile
+starfile
+pillow > 8.1.2
 opencv-python
 scikit-image
 tensorflow
