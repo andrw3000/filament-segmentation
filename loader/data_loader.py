@@ -13,8 +13,8 @@ def get_data(path_train_imgs,
              train_frac,
              valid_frac,
              image_size,
-             num_images_per_original,
-             num_duplicates_before_augmenting,
+             num_patches_per_image,
+             num_duplicates_per_image,
              ):
     """Get, split, and arrange the dataset."""
 
@@ -26,7 +26,7 @@ def get_data(path_train_imgs,
         img_file = os.path.join(path_train_imgs,
                                 msk_file.split('/')[-1][:-4] + '.png')
         img = io.imread(img_file).astype(float) / 255.
-        if num_images_per_original > 1:
+        if num_patches_per_image > 1:
             img = transform.resize(img,
                                    (2 * image_size[0], 2 * image_size[1]),
                                    anti_aliasing=True,
@@ -43,19 +43,19 @@ def get_data(path_train_imgs,
         #print('msk.shape: ', msk.shape)
         #print('img.shape: ', img.shape)
 
-        if num_images_per_original > 1:
-            for _ in range(num_images_per_original):
+        if num_patches_per_image > 1:
+            for _ in range(num_patches_per_image):
                 x_rand = np.random.randint(0, img.shape[1] - image_size[1])
                 y_rand = np.random.randint(0, img.shape[0] - image_size[0])
                 img_cropped = img[y_rand:y_rand + image_size[0],
                                   x_rand:x_rand + image_size[1]]
                 msk_cropped = msk[y_rand:y_rand + image_size[0],
                                   x_rand:x_rand + image_size[1]]
-                for _ in range(num_duplicates_before_augmenting):
+                for _ in range(num_duplicates_per_image):
                     data_tra_imgs.append(np.expand_dims(img_cropped, -1))
                     data_tra_msks.append(np.expand_dims(msk_cropped, -1))
         else:
-            for _ in range(num_duplicates_before_augmenting):
+            for _ in range(num_duplicates_per_image):
                 data_tra_imgs.append(np.expand_dims(img, -1))
                 data_tra_msks.append(np.expand_dims(msk, -1))
 

@@ -1,11 +1,12 @@
 from tensorflow import keras
 from tensorflow.keras import layers
 
-# Sourced from https://keras.io/examples/vision/oxford_pets_image_segmentation/
 
+def get_unet_model(img_size, num_classes=2, num_colour_channels=1):
+    """Instantiate a Keras based U-Net model.
 
-def get_unet_model(img_size, num_classes=2, num_colour_channels=3):
-    """https://keras.io/examples/vision/oxford_pets_image_segmentation/"""
+    See: https://keras.io/examples/vision/oxford_pets_image_segmentation/
+    """
 
     # First half of the network: downsampling inputs
     inputs = keras.Input(shape=img_size + (num_colour_channels,))

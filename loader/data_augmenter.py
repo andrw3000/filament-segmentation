@@ -100,7 +100,7 @@ def random_transform(image, mask):
 def one_hot_mask(image, mask):
     """Converts integer valued binary mask to a one-hot encoded mask."""
     assert mask.shape[-1] == 1, "Last mask channel should be length 1."
-    ohmask = tf.stack((tf.squeeze(mask), 1. - tf.squeeze(mask)), axis=-1)
+    ohmask = tf.stack((1. - tf.squeeze(mask), tf.squeeze(mask)), axis=-1)
     return image, ohmask
 
 
@@ -110,16 +110,29 @@ def augment_data(train_imgs,
                  valid_msks,
                  batch_size,
                  one_hot=False,
+                 augment_on=False,
+                 shuffle_on=False
                  ):
+
+    # Instantiate Dataset object
     train_set = tf.data.Dataset.from_tensor_slices((train_imgs, train_msks))
-    train_set = train_set.shuffle(512)
-    train_set = train_set.map(random_transform)
-    train_set = train_set.batch(batch_size)
     valid_set = tf.data.Dataset.from_tensor_slices((valid_imgs, valid_msks))
-    valid_set = valid_set.shuffle(512).batch(batch_size)
+
+    if shuffle_on:
+        train_set = train_set.shuffle(len(train_set))
+        valid_set = valid_set.shuffle(len(valid_set))
+
+    if augment_on:
+        train_set = train_set.map(random_transform)
+
+    # Batch elements
+    train_set = train_set.batch(batch_size)
+    valid_set = valid_set.batch(batch_size)
+
     if one_hot:
         train_set = train_set.map(one_hot_mask)
         valid_set = valid_set.map(one_hot_mask)
+
     return train_set, valid_set
 
 # def transform_data(images, masks):

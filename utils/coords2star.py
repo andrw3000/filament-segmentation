@@ -1,9 +1,4 @@
-import os
-import sys
 import pandas as pd
-import starfile
-import argparse
-from pathlib import Path
 from itertools import islice
 
 
@@ -14,6 +9,8 @@ def coords2star(line_ends, star_dir):
         `line_ends` containins coordinates obtainined via `get_line_instances`.
         `star_dir` is the location for the output STAR file.
     """
+
+    import starfile
 
     # Generate blank data frame with the headers
     df = pd.DataFrame(columns=['Xstart', 'Xstop',
