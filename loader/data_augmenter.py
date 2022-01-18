@@ -68,8 +68,8 @@ def random_transform(image, mask):
 
     # Get transformation matrix
     mat = get_trans_mat(
-        rotation=15. * tf.random.normal([1], dtype='float32'),
-        shear=5. * tf.random.normal([1], dtype='float32'),
+        rotation=5. * tf.random.normal([1], dtype='float32'),
+        shear=2. * tf.random.normal([1], dtype='float32'),
         height_zoom=1.0 + tf.random.normal([1], dtype='float32') / 10.,
         width_zoom=1.0 + tf.random.normal([1], dtype='float32') / 10.,
         height_shift=16. * tf.random.normal([1], dtype='float32'),
