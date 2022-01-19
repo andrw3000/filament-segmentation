@@ -2,14 +2,14 @@ from tensorflow import keras
 from tensorflow.keras import layers
 
 
-def get_unet_model(img_size, num_classes=2, num_colour_channels=1):
+def get_unet_model(image_size, num_colour_channels=1, num_classes=2):
     """Instantiate a Keras based U-Net model.
 
     See: https://keras.io/examples/vision/oxford_pets_image_segmentation/
     """
 
     # First half of the network: downsampling inputs
-    inputs = keras.Input(shape=img_size + (num_colour_channels,))
+    inputs = keras.Input(shape=image_size + (num_colour_channels,))
 
     # Entry block
     x = layers.Conv2D(32, 3, strides=2, padding="same")(inputs)
@@ -56,8 +56,13 @@ def get_unet_model(img_size, num_classes=2, num_colour_channels=1):
         previous_block_activation = x  # Set aside next residual
 
     # Add a per-pixel classification layer
+    if num_classes == 1:
+        final_activation = "sigmoid"
+    else:
+        final_activation = "softmax"
+
     outputs = layers.Conv2D(
-        num_classes, 3, activation="softmax", padding="same"
+        num_classes, 3, activation=final_activation, padding="same"
     )(x)
 
     # Define the model
