@@ -34,7 +34,7 @@ def coords2star(line_ends, star_dir):
             next_row = pd.Series(new_values, name=filament.format(idx + 1))
             df = df.append(next_row)
 
-    starfile.write(df, star_dir)
+    starfile.write(df, star_dir, overwrite=True)
 
     # Print first few lines of the STAR file for sanity
     with open(star_dir) as file:
