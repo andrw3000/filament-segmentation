@@ -2,58 +2,64 @@ from tensorflow import keras
 from tensorflow.keras import layers
 
 
-def get_autoencoder_model(img_size, num_colour_channels=1, num_classes=2):
-    """Instantiate a Keras based U-Net model.
+def encoding_conv(in_feats, out_feats, stride):
+    """Define bespoke encoding convolution."""
+    return keras.layers.Conv2D(filters=out_feats,
+                               kernel_size=(5, 5),
+                               input_shape=(None, None, in_feats),
+                               strides=(stride, stride),
+                               padding='same',
+                               data_format='channels_last',
+                               activation='relu',
+                               )
 
-    See: https://keras.io/examples/vision/oxford_pets_image_segmentation/
-    """
 
-    # First half of the network: downsampling inputs
-    inputs = keras.Input(shape=img_size + (num_colour_channels,))
+def decoding_conv(in_feats, out_feats, stride, activation='relu'):
+    """Define bespoke decoding convolution."""
+    return keras.layers.Conv2DTranspose(filters=out_feats,
+                                        kernel_size=(5, 5),
+                                        input_shape=(None, None, in_feats),
+                                        strides=(stride, stride),
+                                        padding='same',
+                                        data_format='channels_last',
+                                        activation=activation,
+                                        )
 
-    # Entry block
-    x = layers.Conv2D(32, 3, strides=2, padding="same")(inputs)
+
+def get_autoencoder_model(image_size, num_colour_channels=1, num_classes=2):
+    """Instantiate a Keras Autoencoder model."""
+
+    # Input shape
+    inputs = keras.Input(shape=image_size + (num_colour_channels,))
+
+    # Encoding block
+    x = encoding_conv(1, 128, 1)(inputs)
     x = layers.BatchNormalization()(x)
-    x = layers.Activation("relu")(x)
 
-    previous_block_activation = x  # Set aside residual
+    x = encoding_conv(128, 64, 2)(x)
+    x = layers.BatchNormalization()(x)
 
-    # Blocks 1, 2, 3 are identical apart from the feature depth.
-    for filters in [64, 128, 256]:
-        x = layers.Activation("relu")(x)
-        x = layers.SeparableConv2D(filters, 3, padding="same")(x)
-        x = layers.BatchNormalization()(x)
+    x = encoding_conv(64, 32, 2)(x)
+    x = layers.BatchNormalization()(x)
 
-        x = layers.Activation("relu")(x)
-        x = layers.SeparableConv2D(filters, 3, padding="same")(x)
-        x = layers.BatchNormalization()(x)
+    x = encoding_conv(32, 8, 2)(x)
+    x = layers.BatchNormalization()(x)
 
-        x = layers.MaxPooling2D(3, strides=2, padding="same")(x)
+    # Decoding block
+    x = decoding_conv(8, 8, 2)(x)
+    x = layers.BatchNormalization()(x)
 
-        # Project residual
-        residual = layers.Conv2D(filters, 1, strides=2, padding="same")(
-            previous_block_activation
-        )
-        x = layers.add([x, residual])  # Add back residual
-        previous_block_activation = x  # Set aside next residual
+    x = decoding_conv(8, 16, 2)(x)
+    x = layers.BatchNormalization()(x)
 
-    # Second half of the network: upsampling inputs
-    for filters in [256, 128, 64, 32]:
-        x = layers.Activation("relu")(x)
-        x = layers.Conv2DTranspose(filters, 3, padding="same")(x)
-        x = layers.BatchNormalization()(x)
+    x = decoding_conv(16, 32, 2)(x)
+    x = layers.BatchNormalization()(x)
 
-        x = layers.Activation("relu")(x)
-        x = layers.Conv2DTranspose(filters, 3, padding="same")(x)
-        x = layers.BatchNormalization()(x)
+    x = decoding_conv(32, 64, 1)(x)
+    x = layers.BatchNormalization()(x)
 
-        x = layers.UpSampling2D(2)(x)
-
-        # Project residual
-        residual = layers.UpSampling2D(2)(previous_block_activation)
-        residual = layers.Conv2D(filters, 1, padding="same")(residual)
-        x = layers.add([x, residual])  # Add back residual
-        previous_block_activation = x  # Set aside next residual
+    x = decoding_conv(64, 128, 1)(x)
+    x = layers.BatchNormalization()(x)
 
     # Add a per-pixel classification layer
     if num_classes == 1:
@@ -61,9 +67,9 @@ def get_autoencoder_model(img_size, num_colour_channels=1, num_classes=2):
     else:
         final_activation = "softmax"
 
-    outputs = layers.Conv2D(
-        num_classes, 3, activation=final_activation, padding="same"
-    )(x)
+    x = decoding_conv(128, num_classes, 1, activation=final_activation)(x)
+    # outputs = layers.BatchNormalization()(x)
+    outputs = x
 
     # Define the model
     model = keras.Model(inputs, outputs)
