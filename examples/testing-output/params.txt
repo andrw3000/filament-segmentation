@@ -1,0 +1,6 @@
+Hyperparameters:
+----------------
+
+length_tol =  0.15
+line_pixel_width =  130
+line_sep =  130
