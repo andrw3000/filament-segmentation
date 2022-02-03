@@ -1,0 +1,9 @@
+Hyperparameters:
+----------------
+
+Image file name:  tf1_001.png
+----------------
+
+length_tol =  0.15
+line_pixel_width =  150
+line_sep =  150

@@ -1,0 +1,9 @@
+Hyperparameters:
+----------------
+
+Image file name:  tf2_027.png
+----------------
+
+length_tol =  0.02
+line_pixel_width =  100
+line_sep =  100
